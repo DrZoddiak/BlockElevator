@@ -20,7 +20,6 @@ dependencies {
         isTransitive = false
     }
     kotlin("kotlin-reflect")
-    compileOnly("com.google.guava:guava:21.0")
 }
 
 sponge {

@@ -1,6 +1,5 @@
 package me.zodd.blockelevator
 
-import com.google.common.cache.CacheBuilder
 import com.google.inject.Inject
 import org.apache.logging.log4j.Logger
 import org.spongepowered.api.config.DefaultConfig
@@ -18,8 +17,6 @@ import org.spongepowered.configurate.reference.ConfigurationReference
 import org.spongepowered.math.vector.Vector3d
 import org.spongepowered.plugin.PluginContainer
 import org.spongepowered.plugin.builtin.jvm.Plugin
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @Plugin("BlockElevator")
 class BlockElevator @Inject internal constructor(
@@ -45,17 +42,13 @@ class BlockElevator @Inject internal constructor(
         return rootNode.get() ?: throw ConfigurateException("Failed to load config!")
     }
 
-    private val jumpCache: com.google.common.cache.Cache<UUID, String> = CacheBuilder.newBuilder()
-        .expireAfterWrite(250, TimeUnit.MILLISECONDS)
-        .build()
 
     @Listener
     fun onPlayerJump(event: MoveEntityEvent, @Root player: ServerPlayer) {
-        if (jumpCache.getIfPresent(player.uniqueId()) != null) return
 
         takeIf { hasElevatorPermission(player) } ?: return
 
-        takeUnless { player.onGround().get() } ?: return
+        takeIf { player.onGround().get() } ?: return
 
         val elevator = player.serverLocation().sub(0.0, 1.0, 0.0).let {
             Elevator(it).takeIf { block ->
@@ -73,7 +66,6 @@ class BlockElevator @Inject internal constructor(
         }
         player.offer(Keys.VELOCITY, Vector3d.ZERO)
         elevator.sendElevatorNoise(player.serverLocation())
-        jumpCache.put(player.uniqueId(), "")
     }
 
     @Listener
@@ -82,7 +74,7 @@ class BlockElevator @Inject internal constructor(
         // If the player isn't touching the ground, we can skip everything else
         takeIf { player.onGround().get() } ?: return
 
-        event.endResult().replacedData().firstOrNull { it.key().key() == Keys.IS_SNEAKING } ?: return
+        event.endResult().replacedData().firstOrNull { it.key() == Keys.IS_SNEAKING } ?: return
 
         val blockBelow = player.serverLocation().sub(0.0, 1.0, 0.0)
 
